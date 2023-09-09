@@ -7,9 +7,14 @@ const server = Bun.serve({
         const path = "./file.jpeg";
         await Bun.write(path, result);
 
-        const proc = Bun.spawn(["echo", "hello"]);
-        // return new Response(await new Response(proc.stdout).text());
-        return new Response(Bun.file("./README.md"));
+        const proc = Bun.spawn(['ffmpeg', '-i', './file.jpeg', '-c:v', 'libwebp', '-y', 'out.webp']);
+        let exitCode = await proc.exited
+        if (exitCode == 0) {
+
+            return new Response(Bun.file("out.webp"));
+        } else {
+            return new Response("No Data");
+        }
     },
 });
 

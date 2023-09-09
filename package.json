@@ -1,0 +1,14 @@
+{
+  "name": "webp-converter",
+  "module": "index.ts",
+  "type": "module",
+  "devDependencies": {
+    "bun-types": "latest"
+  },
+  "scripts": {
+    "serve": "bun run index.ts --watch"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

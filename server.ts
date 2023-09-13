@@ -9,6 +9,7 @@ const port = 8080;
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import axios from "axios";
+import { Collections, CollectionsDetails, Sites } from "./types";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -47,7 +48,7 @@ app.get("/getCollections", async (req, res) => {
                 accept: 'application/json', Authorization: req.headers.authorization!,
             }
         });
-        const collectionsData = await collectionsResponse.json()
+        const collectionsData: Collections = await collectionsResponse.json()
         res.json(collectionsData);
     } catch (error) {
         console.error("Error:", error);
@@ -84,13 +85,12 @@ app.get("/getAccessToken", async (req, res) => {
 
 app.get("/getSites", async (req, res) => {
     try {
-        const site_id = req.query.site_id;
         const collectionsResponse = await fetch(`https://api.webflow.com/beta/sites`, {
             headers: {
                 accept: 'application/json', Authorization: req.headers.authorization!,
             }
         });
-        const collectionsData = await collectionsResponse.json()
+        const collectionsData: Sites = await collectionsResponse.json()
         res.json(collectionsData);
     } catch (error) {
         console.error("Error:", error);
@@ -107,8 +107,8 @@ app.get("/getCollectionDetails", async (req, res) => {
                 accept: 'application/json', Authorization: req.headers.authorization!,
             }
         });
-        const collectionsData = await collectionsResponse.json()
-        let filteredFields = collectionsData.fields.filter((e: any) => e.type == "Image")
+        const collectionsData: CollectionsDetails = await collectionsResponse.json()
+        let filteredFields = collectionsData.fields.filter((e) => e.type === "Image")
         res.json(filteredFields);
     } catch (error) {
         console.error("Error:", error);
@@ -146,23 +146,22 @@ app.post("/optimizeItems", async (req, res) => {
                     console.log(optimizedImageSize);
                     patchData.fieldData[key] = { url: downloadURL };
                     console.log(patchData)
-                    const updateResponse = await axios.patch(`https://api.webflow.com/beta/collections/${collection_id}/items/${item.id}`, { ...patchData },
-                        {
-                            headers: {
-                                Authorization: req.headers.authorization!,
-                                Accept: 'application/json',
-                            }
-                        });
-                    console.log(updateResponse.data)
                     optimizedImages.push({
                         image: item.fieldData[key].url,
                         optimizedSize: optimizedImageSize,
                         originalSize: originalSize,
                     })
-                    // deleteObject(optimizedImageRef);
-                    // https://api.webflow.com/beta/sites/{site_id}/publish
+                    deleteObject(optimizedImageRef);
                 }
             }
+            const updateResponse = await axios.patch(`https://api.webflow.com/beta/collections/${collection_id}/items/${item.id}`, { ...patchData },
+                {
+                    headers: {
+                        Authorization: req.headers.authorization!,
+                        Accept: 'application/json',
+                    }
+                });
+            console.log(updateResponse.data)
 
         }
         res.json(optimizedImages);
@@ -177,7 +176,7 @@ app.post("/optimizeItems", async (req, res) => {
 async function optimizeImage(url: string): Promise<StorageReference> {
     try {
         const imageUrl = url;
-        const imageName = imageUrl.split('/').pop()
+        const imageNameWithExtension = imageUrl.split('/').pop()
         // Fetch the image
         const imageResponse = await fetch(imageUrl);
         if (!imageResponse.ok) {
@@ -185,10 +184,10 @@ async function optimizeImage(url: string): Promise<StorageReference> {
         }
 
         // Save the image to a file
-        const imagePath = `./${imageName}`;
+        const imagePath = `./${imageNameWithExtension}`;
         await Bun.write(imagePath, imageResponse);
         // Output Path
-        const output = `${imageName}.webp`
+        const output = `${imageNameWithExtension?.split('.').shift()}.webp`
         // Run ffmpeg
 
         const proc = Bun.spawn(['ffmpeg', '-i', imagePath, '-c:v', 'libwebp', '-y', output]);
